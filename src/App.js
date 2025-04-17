@@ -1,25 +1,48 @@
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
+import AuthorsList from './AuthorsList';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+
+const theme = createTheme({
+    palette: {
+        primary: {
+            main: '#1976d2', // Основной цвет (синий)
+        },
+        secondary: {
+            main: '#f50057', // Вторичный цвет (розовый)
+        },
+        background: {
+            default: '#f5f5f5', // Цвет фона страницы
+            paper: '#ffffff', // Цвет фона карточек
+        },
+    },
+    typography: {
+        h4: {
+            fontWeight: 700, // Жирный заголовок
+        },
+        h5: {
+            fontWeight: 600,
+        },
+        body2: {
+            color: '#555', // Цвет текста для мелких деталей
+        },
+    },
+    components: {
+        MuiCard: {
+            styleOverrides: {
+                root: {
+                    transition: 'all 0.3s ease-in-out', // Плавный переход для hover-эффектов
+                },
+            },
+        },
+    },
+});
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+    return (
+        <ThemeProvider theme={theme}>
+            <AuthorsList />
+        </ThemeProvider>
+    );
 }
 
 export default App;
