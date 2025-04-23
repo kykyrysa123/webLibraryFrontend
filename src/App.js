@@ -1,48 +1,65 @@
 import React from 'react';
-import AuthorsList from './AuthorsList';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import Home from './components/Home';
+import AuthorsList from './components/AuthorsList';
+import BooksList from './components/BooksList';
+import BookDetails from './components/BookDetails';
+import Footer from './components/Footer';
+import {
+    AppBar,
+    Toolbar,
+    Box,
+    Button,
+} from '@mui/material';
 
-const theme = createTheme({
-    palette: {
-        primary: {
-            main: '#1976d2', // Основной цвет (синий)
-        },
-        secondary: {
-            main: '#f50057', // Вторичный цвет (розовый)
-        },
-        background: {
-            default: '#f5f5f5', // Цвет фона страницы
-            paper: '#ffffff', // Цвет фона карточек
-        },
-    },
-    typography: {
-        h4: {
-            fontWeight: 700, // Жирный заголовок
-        },
-        h5: {
-            fontWeight: 600,
-        },
-        body2: {
-            color: '#555', // Цвет текста для мелких деталей
-        },
-    },
-    components: {
-        MuiCard: {
-            styleOverrides: {
-                root: {
-                    transition: 'all 0.3s ease-in-out', // Плавный переход для hover-эффектов
-                },
-            },
-        },
-    },
-});
-
-function App() {
+const App = () => {
     return (
-        <ThemeProvider theme={theme}>
-            <AuthorsList />
-        </ThemeProvider>
+        <Router>
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minHeight: '100vh',
+                    width: '100%',
+                    maxWidth: '100vw',
+                    overflowX: 'hidden',
+                    boxSizing: 'border-box',
+                    margin: 0,
+                }}
+            >
+                <AppBar position="static" sx={{ bgcolor: '#8B4513', width: '100%', overflowX: 'hidden' }}>
+                    <Toolbar>
+                        <Box sx={{ flexGrow: 1 }}>
+                            <Link to="/" style={{ textDecoration: 'none' }}>
+                                <img
+                                    src="https://avatars.mds.yandex.net/i?id=719c9269e947729483f634d19fab97a5d96d4ddb-8201030-images-thumbs&n=13"
+                                    alt="Иконка книги"
+                                    style={{ height: '40px', cursor: 'pointer' }}
+                                />
+                            </Link>
+                        </Box>
+                        <Box>
+                            <Button color="inherit" component={Link} to="/authors">
+                                Авторы
+                            </Button>
+                            <Button color="inherit" component={Link} to="/books">
+                                Книги
+                            </Button>
+                        </Box>
+                    </Toolbar>
+                </AppBar>
+                <Box sx={{ flex: '1 0 auto', marginTop: 2 }}>
+                    <Routes>
+                        <Route path="/" element={<Home />} />
+                        <Route path="/authors" element={<AuthorsList />} />
+                        <Route path="/books" element={<BooksList />} />
+                        <Route path="/books/:id" element={<BookDetails />} />
+                    </Routes>
+                </Box>
+                <Footer />
+            </Box>
+        </Router>
     );
-}
+};
 
 export default App;
