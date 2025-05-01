@@ -43,7 +43,7 @@ const BookDetails = () => {
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     // Заглушка для userId (замените на реальный userId из авторизации)
-    const userId = 3; // Предполагаем, что пользователь с id=1 авторизован
+    const userId = 1; // Предполагаем, что пользователь с id=1 авторизован
 
     useEffect(() => {
         const fetchBookAndReviews = async () => {

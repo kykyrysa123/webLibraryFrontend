@@ -67,7 +67,7 @@ const BooksList = () => {
 
     const fetchData = async () => {
         try {
-            const booksResponse = await axios.get('http://web-library-production.up.railway.app/api/books');
+            const booksResponse = await axios.get('http://localhost:228/api/books');
             const validBooks = booksResponse.data.filter(
                 (book) => book && typeof book === 'object' && book.id && book.title
             );
