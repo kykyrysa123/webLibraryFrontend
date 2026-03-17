@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import {
     Typography,
@@ -20,11 +20,18 @@ import {
     List,
     ListItem,
     ListItemText,
+    AppBar,
+    Toolbar
 } from '@mui/material';
+import { useAuth } from '../context/AuthContext';
+import { useFavorites } from '../context/FavoritesContext'; // Добавь импорт
+import FavoriteButton from './FavoriteButton'; // Добавь импорт
 
 const BookDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user, isAdmin, logout } = useAuth();
+    const { favorites } = useFavorites(); // Добавь для счетчика
     const [book, setBook] = useState(null);
     const [reviews, setReviews] = useState([]);
     const [openDialog, setOpenDialog] = useState(false);
@@ -43,20 +50,20 @@ const BookDetails = () => {
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
     // Заглушка для userId (замените на реальный userId из авторизации)
-    const userId = 1; // Предполагаем, что пользователь с id=1 авторизован
+    const userId = user?.id || 1;
 
     useEffect(() => {
         const fetchBookAndReviews = async () => {
             try {
-                const bookResponse = await axios.get(`http://localhost:228/api/books/${id}`);
+                const bookResponse = await axios.get(`http://localhost:8080/api/books/${id}`);
                 setBook(bookResponse.data);
                 setNewReadUrl(bookResponse.data.readUrl || '');
 
-                const reviewsResponse = await axios.get(`http://localhost:228/api/reviews?bookId=${id}`);
-                console.log('Reviews fetched:', reviewsResponse.data); // Отладка
+                const reviewsResponse = await axios.get(`http://localhost:8080/api/reviews?bookId=${id}`);
+                console.log('Reviews fetched:', reviewsResponse.data);
                 setReviews(reviewsResponse.data);
             } catch (error) {
-                console.error('Error fetching data:', error); // Отладка
+                console.error('Error fetching data:', error);
                 setSnackbar({ open: true, message: 'Ошибка получения данных', severity: 'error' });
             }
         };
@@ -89,7 +96,7 @@ const BookDetails = () => {
     };
 
     const handleOpenEditReviewDialog = (review) => {
-        console.log('Editing review:', review); // Отладка
+        console.log('Editing review:', review);
         setEditReview({
             id: review.id,
             rating: review.rating,
@@ -125,7 +132,7 @@ const BookDetails = () => {
                 authorIds: book.authors ? book.authors.map((a) => a.id) : [],
                 readUrl: newReadUrl,
             };
-            await axios.put(`http://localhost:228/api/books/${id}`, updatedBook);
+            await axios.put(`http://localhost:8080/api/books/${id}`, updatedBook);
             setBook({ ...book, readUrl: newReadUrl });
             setSnackbar({ open: true, message: 'Ссылка для чтения успешно обновлена', severity: 'success' });
             handleCloseDialog();
@@ -152,14 +159,14 @@ const BookDetails = () => {
                 bookId: parseInt(id),
                 userId: userId,
             };
-            console.log('Submitting review:', reviewData); // Отладка
-            await axios.post('http://localhost:228/api/reviews', reviewData);
-            const reviewsResponse = await axios.get(`http://localhost:228/api/reviews?bookId=${id}`);
+            console.log('Submitting review:', reviewData);
+            await axios.post('http://localhost:8080/api/reviews', reviewData);
+            const reviewsResponse = await axios.get(`http://localhost:8080/api/reviews?bookId=${id}`);
             setReviews(reviewsResponse.data);
             setSnackbar({ open: true, message: 'Отзыв успешно добавлен', severity: 'success' });
             handleCloseReviewDialog();
         } catch (error) {
-            console.error('Error submitting review:', error); // Отладка
+            console.error('Error submitting review:', error);
             setSnackbar({ open: true, message: 'Ошибка добавления отзыва', severity: 'error' });
         }
     };
@@ -182,27 +189,27 @@ const BookDetails = () => {
                 bookId: parseInt(id),
                 userId: userId,
             };
-            console.log('Updating review:', reviewData); // Отладка
-            await axios.put(`http://localhost:228/api/reviews/${editReview.id}`, reviewData);
-            const reviewsResponse = await axios.get(`http://localhost:228/api/reviews?bookId=${id}`);
+            console.log('Updating review:', reviewData);
+            await axios.put(`http://localhost:8080/api/reviews/${editReview.id}`, reviewData);
+            const reviewsResponse = await axios.get(`http://localhost:8080/api/reviews?bookId=${id}`);
             setReviews(reviewsResponse.data);
             setSnackbar({ open: true, message: 'Отзыв успешно отредактирован', severity: 'success' });
             handleCloseEditReviewDialog();
         } catch (error) {
-            console.error('Error updating review:', error); // Отладка
+            console.error('Error updating review:', error);
             setSnackbar({ open: true, message: 'Ошибка редактирования отзыва', severity: 'error' });
         }
     };
 
     const handleDeleteReview = async (reviewId) => {
-        console.log('Deleting review ID:', reviewId); // Отладка
+        console.log('Deleting review ID:', reviewId);
         try {
-            await axios.delete(`http://localhost:228/api/reviews/${reviewId}`);
-            const reviewsResponse = await axios.get(`http://localhost:228/api/reviews?bookId=${id}`);
+            await axios.delete(`http://localhost:8080/api/reviews/${reviewId}`);
+            const reviewsResponse = await axios.get(`http://localhost:8080/api/reviews?bookId=${id}`);
             setReviews(reviewsResponse.data);
             setSnackbar({ open: true, message: 'Отзыв успешно удалён', severity: 'success' });
         } catch (error) {
-            console.error('Error deleting review:', error); // Отладка
+            console.error('Error deleting review:', error);
             setSnackbar({ open: true, message: 'Ошибка удаления отзыва', severity: 'error' });
         }
     };
@@ -210,49 +217,97 @@ const BookDetails = () => {
     if (!book) return <Typography>Загрузка...</Typography>;
 
     return (
-        <Box sx={{ padding: 4, backgroundColor: '#E0E0E0', width: '100%', maxWidth: '100vw', boxSizing: 'border-box' }}>
-            <Card sx={{ maxWidth: 600, margin: '0 auto', backgroundColor: 'rgba(255, 255, 255, 0.95)', border: '1px solid #d4a373' }}>
-                {book.imageUrl && (
-                    <CardMedia
-                        component="img"
-                        height="300"
-                        image={book.imageUrl}
-                        alt={book.title}
-                        sx={{ objectFit: 'cover' }}
-                    />
-                )}
-                <CardContent>
-                    <Typography variant="h4" gutterBottom>
-                        {book.title}
+        <Box>
+            <AppBar position="static" sx={{ backgroundColor: '#8B4513', mb: 4 }}>
+                <Toolbar>
+                    <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                        Библиотека - Детали книги
                     </Typography>
-                    <Typography variant="subtitle1">
-                        Авторы:{' '}
-                        {book.authors && Array.isArray(book.authors) && book.authors.length > 0
-                            ? book.authors.map((author) => getFullName(author)).join(', ')
-                            : 'Неизвестный автор'}
-                    </Typography>
-                    <Typography variant="body1">Жанр: {book.genre || 'Не указано'}</Typography>
-                    <Typography variant="body1">Издатель: {book.publisher || 'Не указано'}</Typography>
-                    <Typography variant="body1">Страницы: {book.pages || 'Не указано'}</Typography>
-                    <Typography variant="body1">Язык: {book.language || 'Не указано'}</Typography>
-                    <Typography variant="body1">Дата публикации: {book.publishDate || 'Не указано'}</Typography>
-                    <Typography variant="body1" paragraph>
-                        Описание: {book.description || 'Описание отсутствует'}
-                    </Typography>
-                    {/* Кнопки на первой строке */}
-                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 2 }}>
-                        {book.readUrl && (
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                href={book.readUrl}
-                                target="_blank"
-                                sx={{ backgroundColor: '#8B4513' }}
+                    <Button color="inherit" component={Link} to="/">
+                        Главная
+                    </Button>
+                    <Button color="inherit" component={Link} to="/books">
+                        Книги
+                    </Button>
+                    <Button color="inherit" component={Link} to="/authors">
+                        Авторы
+                    </Button>
+                    {/* Кнопка Избранное с счетчиком */}
+                    <Button color="inherit" component={Link} to="/favorites">
+                        Избранное
+                        {favorites.length > 0 && (
+                            <Box
+                                component="span"
+                                sx={{
+                                    ml: 1,
+                                    bgcolor: 'error.main',
+                                    borderRadius: '50%',
+                                    width: 20,
+                                    height: 20,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '0.75rem'
+                                }}
                             >
-                                Читать книгу
-                            </Button>
+                                {favorites.length}
+                            </Box>
                         )}
-                        {userId && (
+                    </Button>
+                    {isAdmin && (
+                        <Button color="inherit" component={Link} to="/admin">
+                            Админ панель
+                        </Button>
+                    )}
+                    <Button color="inherit" onClick={logout}>
+                        Выйти ({user?.username})
+                    </Button>
+                </Toolbar>
+            </AppBar>
+
+            <Box sx={{ padding: 4, backgroundColor: '#E0E0E0', width: '100%', maxWidth: '100vw', boxSizing: 'border-box' }}>
+                <Card sx={{ maxWidth: 600, margin: '0 auto', backgroundColor: 'rgba(255, 255, 255, 0.95)', border: '1px solid #d4a373' }}>
+                    {book.imageUrl && (
+                        <CardMedia
+                            component="img"
+                            height="300"
+                            image={book.imageUrl}
+                            alt={book.title}
+                            sx={{ objectFit: 'cover' }}
+                        />
+                    )}
+                    <CardContent>
+                        <Typography variant="h4" gutterBottom>
+                            {book.title}
+                        </Typography>
+                        <Typography variant="subtitle1">
+                            Авторы:{' '}
+                            {book.authors && Array.isArray(book.authors) && book.authors.length > 0
+                                ? book.authors.map((author) => getFullName(author)).join(', ')
+                                : 'Неизвестный автор'}
+                        </Typography>
+                        <Typography variant="body1">Жанр: {book.genre || 'Не указано'}</Typography>
+                        <Typography variant="body1">Издатель: {book.publisher || 'Не указано'}</Typography>
+                        <Typography variant="body1">Страницы: {book.pages || 'Не указано'}</Typography>
+                        <Typography variant="body1">Язык: {book.language || 'Не указано'}</Typography>
+                        <Typography variant="body1">Дата публикации: {book.publishDate || 'Не указано'}</Typography>
+                        <Typography variant="body1" paragraph>
+                            Описание: {book.description || 'Описание отсутствует'}
+                        </Typography>
+
+                        {/* Кнопки на первой строке */}
+                        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 2, alignItems: 'center' }}>
+                            {book.readUrl && (
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    href={book.readUrl}
+                                    target="_blank"
+                                    sx={{ backgroundColor: '#8B4513' }}
+                                >
+                                    Читать книгу
+                                </Button>
+                            )}
                             <Button
                                 variant="contained"
                                 color="primary"
@@ -261,173 +316,190 @@ const BookDetails = () => {
                             >
                                 Оставить отзыв
                             </Button>
+                            <Button
+                                variant="contained"
+                                color="secondary"
+                                onClick={() => navigate('/books')}
+                            >
+                                Вернуться к книгам
+                            </Button>
+                            {/* Кнопка избранного */}
+                            <FavoriteButton
+                                book={book}
+                                size="large"
+                                sx={{
+                                    border: '1px solid',
+                                    borderColor: 'action.disabled',
+                                    p: 1
+                                }}
+                            />
+                        </Box>
+
+                        {/* Кнопка редактирования ссылки - только для админа */}
+                        {isAdmin && (
+                            <Box sx={{ display: 'flex', gap: 2 }}>
+                                <Button
+                                    variant="outlined"
+                                    color="primary"
+                                    onClick={handleOpenDialog}
+                                    sx={{ borderColor: '#8B4513', color: '#8B4513' }}
+                                >
+                                    Редактировать ссылку для чтения
+                                </Button>
+                            </Box>
                         )}
-                        <Button
-                            variant="contained"
-                            color="secondary"
-                            onClick={() => navigate('/books')}
-                        >
-                            Вернуться к книгам
-                        </Button>
-                    </Box>
-                    {/* Кнопка на второй строке */}
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                        <Button
-                            variant="outlined"
-                            color="primary"
-                            onClick={handleOpenDialog}
-                            sx={{ borderColor: '#8B4513', color: '#8B4513' }}
-                        >
-                            Редактировать ссылку для чтения
-                        </Button>
-                    </Box>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
 
-            {/* Секция отзывов */}
-            <Box sx={{ maxWidth: 600, margin: '2rem auto' }}>
-                <Typography variant="h5" gutterBottom>
-                    Отзывы
-                </Typography>
-                {reviews.length > 0 ? (
-                    <List>
-                        {reviews.map((review) => (
-                            <React.Fragment key={review.id}>
-                                <ListItem>
-                                    <ListItemText
-                                        primary={
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <Rating value={review.rating} readOnly precision={0.5} />
-                                                <Typography variant="body2" color="text.secondary">
-                                                    {new Date(review.reviewDate).toLocaleDateString()}
-                                                </Typography>
+                {/* Секция отзывов */}
+                <Box sx={{ maxWidth: 600, margin: '2rem auto' }}>
+                    <Typography variant="h5" gutterBottom>
+                        Отзывы
+                    </Typography>
+                    {reviews.length > 0 ? (
+                        <List>
+                            {reviews.map((review) => (
+                                <React.Fragment key={review.id}>
+                                    <ListItem>
+                                        <ListItemText
+                                            primary={
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Rating value={review.rating} readOnly precision={0.5} />
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        {new Date(review.reviewDate).toLocaleDateString()}
+                                                    </Typography>
+                                                </Box>
+                                            }
+                                            secondary={
+                                                <Typography variant="body1">{review.reviewText}</Typography>
+                                            }
+                                        />
+                                        {/* Проверка на владельца отзыва или админа */}
+                                        {(isAdmin || review.userId === userId) && (
+                                            <Box sx={{ ml: 2 }}>
+                                                <Button
+                                                    size="small"
+                                                    color="primary"
+                                                    onClick={() => handleOpenEditReviewDialog(review)}
+                                                >
+                                                    Редактировать
+                                                </Button>
+                                                <Button
+                                                    size="small"
+                                                    color="error"
+                                                    onClick={() => handleDeleteReview(review.id)}
+                                                >
+                                                    Удалить
+                                                </Button>
                                             </Box>
-                                        }
-                                        secondary={
-                                            <Typography variant="body1">{review.reviewText}</Typography>
-                                        }
-                                    />
-                                    {/* Временно убрана проверка userId для отладки */}
-                                    <Box sx={{ ml: 2 }}>
-                                        <Button
-                                            size="small"
-                                            color="primary"
-                                            onClick={() => handleOpenEditReviewDialog(review)}
-                                        >
-                                            Редактировать
-                                        </Button>
-                                        <Button
-                                            size="small"
-                                            color="error"
-                                            onClick={() => handleDeleteReview(review.id)}
-                                        >
-                                            Удалить
-                                        </Button>
-                                    </Box>
-                                </ListItem>
-                                <Divider />
-                            </React.Fragment>
-                        ))}
-                    </List>
-                ) : (
-                    <Typography variant="body1">Отзывы отсутствуют.</Typography>
+                                        )}
+                                    </ListItem>
+                                    <Divider />
+                                </React.Fragment>
+                            ))}
+                        </List>
+                    ) : (
+                        <Typography variant="body1">Отзывы отсутствуют.</Typography>
+                    )}
+                </Box>
+
+                {/* Диалог для редактирования readUrl - только для админа */}
+                {isAdmin && (
+                    <Dialog open={openDialog} onClose={handleCloseDialog}>
+                        <DialogTitle>Редактировать ссылку для чтения</DialogTitle>
+                        <DialogContent>
+                            <TextField
+                                label="Ссылка для чтения"
+                                value={newReadUrl}
+                                onChange={(e) => setNewReadUrl(e.target.value)}
+                                fullWidth
+                                margin="normal"
+                                placeholder="https://example.com/read-book"
+                            />
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={handleCloseDialog}>Отмена</Button>
+                            <Button onClick={handleUpdateReadUrl} color="primary">
+                                Сохранить
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
                 )}
+
+                {/* Диалог для добавления отзыва */}
+                <Dialog open={openReviewDialog} onClose={handleCloseReviewDialog}>
+                    <DialogTitle>Оставить отзыв</DialogTitle>
+                    <DialogContent>
+                        <Box sx={{ mt: 2 }}>
+                            <Typography variant="body1" gutterBottom>
+                                Рейтинг
+                            </Typography>
+                            <Rating
+                                value={newReview.rating}
+                                onChange={(e, newValue) => setNewReview({ ...newReview, rating: newValue })}
+                                precision={0.5}
+                            />
+                        </Box>
+                        <TextField
+                            label="Текст отзыва"
+                            value={newReview.reviewText}
+                            onChange={(e) => setNewReview({ ...newReview, reviewText: e.target.value })}
+                            fullWidth
+                            multiline
+                            rows={4}
+                            margin="normal"
+                            placeholder="Ваш отзыв о книге..."
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleCloseReviewDialog}>Отмена</Button>
+                        <Button onClick={handleSubmitReview} color="primary">
+                            Отправить
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* Диалог для редактирования отзыва */}
+                <Dialog open={openEditReviewDialog} onClose={handleCloseEditReviewDialog}>
+                    <DialogTitle>Редактировать отзыв</DialogTitle>
+                    <DialogContent>
+                        <Box sx={{ mt: 2 }}>
+                            <Typography variant="body1" gutterBottom>
+                                Рейтинг
+                            </Typography>
+                            <Rating
+                                value={editReview.rating}
+                                onChange={(e, newValue) => setEditReview({ ...editReview, rating: newValue })}
+                                precision={0.5}
+                            />
+                        </Box>
+                        <TextField
+                            label="Текст отзыва"
+                            value={editReview.reviewText}
+                            onChange={(e) => setEditReview({ ...editReview, reviewText: e.target.value })}
+                            fullWidth
+                            multiline
+                            rows={4}
+                            margin="normal"
+                            placeholder="Ваш отзыв о книге..."
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleCloseEditReviewDialog}>Отмена</Button>
+                        <Button onClick={handleEditReview} color="primary">
+                            Сохранить
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                <Snackbar
+                    open={snackbar.open}
+                    autoHideDuration={6000}
+                    onClose={() => setSnackbar({ ...snackbar, open: false })}
+                >
+                    <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
+                </Snackbar>
             </Box>
-
-            {/* Диалог для редактирования readUrl */}
-            <Dialog open={openDialog} onClose={handleCloseDialog}>
-                <DialogTitle>Редактировать ссылку для чтения</DialogTitle>
-                <DialogContent>
-                    <TextField
-                        label="Ссылка для чтения"
-                        value={newReadUrl}
-                        onChange={(e) => setNewReadUrl(e.target.value)}
-                        fullWidth
-                        margin="normal"
-                        placeholder="https://example.com/read-book"
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseDialog}>Отмена</Button>
-                    <Button onClick={handleUpdateReadUrl} color="primary">
-                        Сохранить
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* Диалог для добавления отзыва */}
-            <Dialog open={openReviewDialog} onClose={handleCloseReviewDialog}>
-                <DialogTitle>Оставить отзыв</DialogTitle>
-                <DialogContent>
-                    <Box sx={{ mt: 2 }}>
-                        <Typography variant="body1" gutterBottom>
-                            Рейтинг
-                        </Typography>
-                        <Rating
-                            value={newReview.rating}
-                            onChange={(e, newValue) => setNewReview({ ...newReview, rating: newValue })}
-                            precision={0.5}
-                        />
-                    </Box>
-                    <TextField
-                        label="Текст отзыва"
-                        value={newReview.reviewText}
-                        onChange={(e) => setNewReview({ ...newReview, reviewText: e.target.value })}
-                        fullWidth
-                        multiline
-                        rows={4}
-                        margin="normal"
-                        placeholder="Ваш отзыв о книге..."
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseReviewDialog}>Отмена</Button>
-                    <Button onClick={handleSubmitReview} color="primary">
-                        Отправить
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* Диалог для редактирования отзыва */}
-            <Dialog open={openEditReviewDialog} onClose={handleCloseEditReviewDialog}>
-                <DialogTitle>Редактировать отзыв</DialogTitle>
-                <DialogContent>
-                    <Box sx={{ mt: 2 }}>
-                        <Typography variant="body1" gutterBottom>
-                            Рейтинг
-                        </Typography>
-                        <Rating
-                            value={editReview.rating}
-                            onChange={(e, newValue) => setEditReview({ ...editReview, rating: newValue })}
-                            precision={0.5}
-                        />
-                    </Box>
-                    <TextField
-                        label="Текст отзыва"
-                        value={editReview.reviewText}
-                        onChange={(e) => setEditReview({ ...editReview, reviewText: e.target.value })}
-                        fullWidth
-                        multiline
-                        rows={4}
-                        margin="normal"
-                        placeholder="Ваш отзыв о книге..."
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseEditReviewDialog}>Отмена</Button>
-                    <Button onClick={handleEditReview} color="primary">
-                        Сохранить
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            <Snackbar
-                open={snackbar.open}
-                autoHideDuration={6000}
-                onClose={() => setSnackbar({ ...snackbar, open: false })}
-            >
-                <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
-            </Snackbar>
         </Box>
     );
 };

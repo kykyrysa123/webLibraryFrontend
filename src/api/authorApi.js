@@ -1,4 +1,4 @@
-const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:228";
+const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:8080";
 
 export const addAuthor = async (author) => {
     try {

@@ -14,16 +14,22 @@ import {
     RadioGroup,
     FormControlLabel,
     Radio,
+    AppBar,
+    Toolbar
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import { useFavorites } from '../context/FavoritesContext'; // Добавь импорт
 
 const Home = () => {
+    const { user, isAdmin, logout } = useAuth();
+    const { favorites } = useFavorites(); // Добавь для счетчика
     const [allBooks, setAllBooks] = useState([]);
     const [books, setBooks] = useState([]);
     const [displayedBooks, setDisplayedBooks] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
-    const [searchType, setSearchType] = useState('author'); // 'author' или 'title'
+    const [searchType, setSearchType] = useState('author');
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const booksPerPage = 6;
@@ -42,7 +48,7 @@ const Home = () => {
 
     const fetchBooks = async () => {
         try {
-            const response = await axios.get('http://localhost:228/api/books');
+            const response = await axios.get('http://localhost:8080/api/books');
             const validBooks = response.data.filter(
                 (book) => book && typeof book === 'object' && book.id && book.title
             );
@@ -87,7 +93,7 @@ const Home = () => {
                 );
                 setBooks(filtered);
             } else {
-                const response = await axios.get(`http://localhost:228/api/books/by-title?title=${encodeURIComponent(query)}`);
+                const response = await axios.get(`http://localhost:8080/api/books/by-title?title=${encodeURIComponent(query)}`);
                 const validBooks = response.data.filter(
                     (book) => book && typeof book === 'object' && book.id && book.title
                 );
@@ -111,121 +117,171 @@ const Home = () => {
     };
 
     return (
-        <Box
-            sx={{
-                py: 4,
-                backgroundColor: '#E0E0E0',
-                width: '100%',
-                maxWidth: '100vw',
-                overflowX: 'hidden',
-                boxSizing: 'border-box',
-                px: { xs: 0, sm: 1, md: 2 },
-                margin: 0,
-            }}
-        >
-            <Typography variant="h4" gutterBottom sx={{ textAlign: 'center', mb: 4 }}>
-                Все книги
-            </Typography>
-            <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                <FormControl component="fieldset">
-                    <RadioGroup
-                        row
-                        value={searchType}
-                        onChange={(e) => setSearchType(e.target.value)}
-                    >
-                        <FormControlLabel value="author" control={<Radio />} label="По автору" />
-                        <FormControlLabel value="title" control={<Radio />} label="По названию" />
-                    </RadioGroup>
-                </FormControl>
-                <Box sx={{ display: 'flex', gap: 2, width: { xs: '100%', sm: '50%', md: '40%' } }}>
-                    <TextField
-                        label={searchType === 'author' ? 'Поиск по имени автора' : 'Поиск по названию книги'}
-                        variant="outlined"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        fullWidth
-                    />
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={handleSearch}
-                        sx={{ backgroundColor: '#8B4513', color: '#fff' }}
-                    >
-                        Найти
+        <Box>
+            <AppBar position="static" sx={{ backgroundColor: '#8B4513', mb: 4 }}>
+                <Toolbar>
+                    <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                        Библиотека
+                    </Typography>
+                    <Button color="inherit" component={Link} to="/books">
+                        Книги
                     </Button>
-                    <Button
-                        variant="outlined"
-                        onClick={handleClear}
-                        sx={{ borderColor: '#8B4513', color: '#8B4513' }}
-                    >
-                        Очистить
+                    <Button color="inherit" component={Link} to="/authors">
+                        Авторы
                     </Button>
-                </Box>
-            </Box>
-            {displayedBooks.length > 0 ? (
-                <Grid container spacing={2} sx={{ width: '100%', maxWidth: '100%', mx: 0 }}>
-                    {displayedBooks.map((book) => (
-                        <Grid item xs={12} sm={6} md={4} key={book.id}>
-                            <Card
+                    {/* Кнопка Избранное с счетчиком */}
+                    <Button color="inherit" component={Link} to="/favorites">
+                        Избранное
+                        {favorites.length > 0 && (
+                            <Box
+                                component="span"
                                 sx={{
-                                    height: '100%',
-                                    width: '100%',
-                                    maxWidth: '100%',
-                                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                    border: '1px solid #d4a373',
-                                    mx: 0,
+                                    ml: 1,
+                                    bgcolor: 'error.main',
+                                    borderRadius: '50%',
+                                    width: 20,
+                                    height: 20,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '0.75rem'
                                 }}
                             >
-                                <CardActionArea onClick={() => handleCardClick(book.id)}>
-                                    <CardMedia
-                                        component="img"
-                                        height="140"
-                                        image={book.imageUrl || 'https://via.placeholder.com/140'}
-                                        alt={book.title}
-                                        sx={{ objectFit: 'cover' }}
-                                    />
-                                    <CardContent>
-                                        <Typography
-                                            variant="h6"
-                                            gutterBottom
-                                            color="primary.main"
-                                            sx={{ textDecoration: 'none' }}
-                                        >
-                                            {book.title}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Авторы:{' '}
-                                            {book.authors && Array.isArray(book.authors) && book.authors.length > 0
-                                                ? book.authors.map((author) => getFullName(author)).join(', ')
-                                                : 'Неизвестный автор'}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Жанр: {book.genre || 'Не указано'}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Дата публикации: {book.publishDate || 'Не указано'}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Издатель: {book.publisher || 'Не указано'}
-                                        </Typography>
-                                    </CardContent>
-                                </CardActionArea>
-                            </Card>
-                        </Grid>
-                    ))}
-                </Grid>
-            ) : (
-                <Typography variant="body1" sx={{ textAlign: 'center', mt: 4 }}>
-                    Книги не найдены.
+                                {favorites.length}
+                            </Box>
+                        )}
+                    </Button>
+                    {isAdmin && (
+                        <Button color="inherit" component={Link} to="/admin">
+                            Админ панель
+                        </Button>
+                    )}
+                    <Button color="inherit" onClick={logout}>
+                        Выйти ({user?.username})
+                    </Button>
+                </Toolbar>
+            </AppBar>
+
+            <Box
+                sx={{
+                    py: 4,
+                    backgroundColor: '#E0E0E0',
+                    width: '100%',
+                    maxWidth: '100vw',
+                    overflowX: 'hidden',
+                    boxSizing: 'border-box',
+                    px: { xs: 0, sm: 1, md: 2 },
+                    margin: 0,
+                }}
+            >
+                <Typography variant="h4" gutterBottom sx={{ textAlign: 'center', mb: 4 }}>
+                    Все книги
                 </Typography>
-            )}
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                <Pagination
-                    count={totalPages}
-                    page={page}
-                    onChange={(e, value) => setPage(value)}
-                    color="primary"
-                />
+
+                <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                    <FormControl component="fieldset">
+                        <RadioGroup
+                            row
+                            value={searchType}
+                            onChange={(e) => setSearchType(e.target.value)}
+                        >
+                            <FormControlLabel value="author" control={<Radio />} label="По автору" />
+                            <FormControlLabel value="title" control={<Radio />} label="По названию" />
+                        </RadioGroup>
+                    </FormControl>
+
+                    <Box sx={{ display: 'flex', gap: 2, width: { xs: '100%', sm: '50%', md: '40%' } }}>
+                        <TextField
+                            label={searchType === 'author' ? 'Поиск по имени автора' : 'Поиск по названию книги'}
+                            variant="outlined"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            fullWidth
+                        />
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleSearch}
+                            sx={{ backgroundColor: '#8B4513', color: '#fff' }}
+                        >
+                            Найти
+                        </Button>
+                        <Button
+                            variant="outlined"
+                            onClick={handleClear}
+                            sx={{ borderColor: '#8B4513', color: '#8B4513' }}
+                        >
+                            Очистить
+                        </Button>
+                    </Box>
+                </Box>
+
+                {displayedBooks.length > 0 ? (
+                    <Grid container spacing={2} sx={{ width: '100%', maxWidth: '100%', mx: 0 }}>
+                        {displayedBooks.map((book) => (
+                            <Grid item xs={12} sm={6} md={4} key={book.id}>
+                                <Card
+                                    sx={{
+                                        height: '100%',
+                                        width: '100%',
+                                        maxWidth: '100%',
+                                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                        border: '1px solid #d4a373',
+                                        mx: 0,
+                                    }}
+                                >
+                                    <CardActionArea onClick={() => handleCardClick(book.id)}>
+                                        <CardMedia
+                                            component="img"
+                                            height="140"
+                                            image={book.imageUrl || 'https://via.placeholder.com/140'}
+                                            alt={book.title}
+                                            sx={{ objectFit: 'cover' }}
+                                        />
+                                        <CardContent>
+                                            <Typography
+                                                variant="h6"
+                                                gutterBottom
+                                                color="primary.main"
+                                                sx={{ textDecoration: 'none' }}
+                                            >
+                                                {book.title}
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Авторы:{' '}
+                                                {book.authors && Array.isArray(book.authors) && book.authors.length > 0
+                                                    ? book.authors.map((author) => getFullName(author)).join(', ')
+                                                    : 'Неизвестный автор'}
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Жанр: {book.genre || 'Не указано'}
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Дата публикации: {book.publishDate || 'Не указано'}
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Издатель: {book.publisher || 'Не указано'}
+                                            </Typography>
+                                        </CardContent>
+                                    </CardActionArea>
+                                </Card>
+                            </Grid>
+                        ))}
+                    </Grid>
+                ) : (
+                    <Typography variant="body1" sx={{ textAlign: 'center', mt: 4 }}>
+                        Книги не найдены.
+                    </Typography>
+                )}
+
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                    <Pagination
+                        count={totalPages}
+                        page={page}
+                        onChange={(e, value) => setPage(value)}
+                        color="primary"
+                    />
+                </Box>
             </Box>
         </Box>
     );

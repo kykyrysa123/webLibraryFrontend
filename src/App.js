@@ -1,65 +1,76 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { FavoritesProvider } from './context/FavoritesContext'; // Добавь импорт
+import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import Home from './components/Home';
-import AuthorsList from './components/AuthorsList';
 import BooksList from './components/BooksList';
 import BookDetails from './components/BookDetails';
-import Footer from './components/Footer';
-import {
-    AppBar,
-    Toolbar,
-    Box,
-    Button,
-} from '@mui/material';
+import AuthorsList from './components/AuthorsList';
+import FavoritesList from './components/FavoritesList'; // Добавь импорт
 
-const App = () => {
+function App() {
     return (
         <Router>
-            <Box
-                sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    minHeight: '100vh',
-                    width: '100%',
-                    maxWidth: '100vw',
-                    overflowX: 'hidden',
-                    boxSizing: 'border-box',
-                    margin: 0,
-                }}
-            >
-                <AppBar position="static" sx={{ bgcolor: '#8B4513', width: '100%', overflowX: 'hidden' }}>
-                    <Toolbar>
-                        <Box sx={{ flexGrow: 1 }}>
-                            <Link to="/" style={{ textDecoration: 'none' }}>
-                                <img
-                                    src="https://avatars.mds.yandex.net/i?id=719c9269e947729483f634d19fab97a5d96d4ddb-8201030-images-thumbs&n=13"
-                                    alt="Иконка книги"
-                                    style={{ height: '40px', cursor: 'pointer' }}
-                                />
-                            </Link>
-                        </Box>
-                        <Box>
-                            <Button color="inherit" component={Link} to="/authors">
-                                Авторы
-                            </Button>
-                            <Button color="inherit" component={Link} to="/books">
-                                Книги
-                            </Button>
-                        </Box>
-                    </Toolbar>
-                </AppBar>
-                <Box sx={{ flex: '1 0 auto', marginTop: 2 }}>
+            <AuthProvider>
+                <FavoritesProvider> {/* Оборачиваем в FavoritesProvider */}
                     <Routes>
-                        <Route path="/" element={<Home />} />
-                        <Route path="/authors" element={<AuthorsList />} />
-                        <Route path="/books" element={<BooksList />} />
-                        <Route path="/books/:id" element={<BookDetails />} />
+                        {/* Публичные маршруты */}
+                        <Route path="/login" element={<LoginPage />} />
+                        <Route path="/register" element={<RegisterPage />} />
+
+                        {/* Маршруты для всех авторизованных пользователей */}
+                        <Route
+                            path="/"
+                            element={
+                                <ProtectedRoute>
+                                    <Home />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/books"
+                            element={
+                                <ProtectedRoute>
+                                    <BooksList />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/books/:id"
+                            element={
+                                <ProtectedRoute>
+                                    <BookDetails />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/authors"
+                            element={
+                                <ProtectedRoute>
+                                    <AuthorsList />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/favorites" // Новый маршрут
+                            element={
+                                <ProtectedRoute>
+                                    <FavoritesList />
+                                </ProtectedRoute>
+                            }
+                        />
+
+                        {/* Если адрес не найден - на главную */}
+                        <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
-                </Box>
-                <Footer />
-            </Box>
+                </FavoritesProvider>
+            </AuthProvider>
         </Router>
     );
-};
+}
 
 export default App;
